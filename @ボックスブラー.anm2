@@ -1,0 +1,87 @@
+@ボックスブラー_横
+--track@radius:半径,0,30,1,1
+--check@edge:エッジピクセルを繰り返す,false
+--filter
+
+--[[pixelshader@psmain:
+Texture2D tempbuffer : register(t0);
+SamplerState sampler0 : register(s0);
+cbuffer constant0 : register(b0){
+    float radius;
+    float edge;
+};
+float4 psmain(float4 input : SV_Position) : SV_Target{
+    uint w,h;
+    tempbuffer.GetDimensions(w,h);
+    float2 texelSize = float2(1.0/w, 1.0/h);
+    float2 uv = input.xy * texelSize;
+    float4 color = float4(0,0,0,0);
+    
+    int rx = (int)radius;
+    
+    //水平方向
+    int countX = (rx == 0) ? 1 : (rx * 2 + 1);
+    for(int x = -rx; x <= rx; x++){
+        float2 offset = float2(x * texelSize.x, 0);
+        float2 sampleUV = uv + offset; //取得する座標
+        if(edge == 1.0){
+            sampleUV = clamp(sampleUV, 0.0, 1.0);
+        }
+        color += tempbuffer.Sample(sampler0, sampleUV);
+    }
+    color /= countX;
+
+    return color;
+}
+]]
+obj.effect("領域拡張","左",radius,"右",radius)
+obj.copybuffer("tempbuffer","object")--tempbufferに元の映像を退避。
+obj.pixelshader("psmain","object",{"tempbuffer"},{radius,edge and 1 or 0},"draw","loop");
+if(obj.getinfo("filter")) then
+	obj.draw()
+	obj.copybuffer("object","framebuffer")
+end
+
+@ボックスブラー_縦
+--track@radius:半径,0,30,1,1
+--check@edge:エッジピクセルを繰り返す,false
+--filter
+
+--[[pixelshader@psmain:
+Texture2D tempbuffer : register(t0);
+SamplerState sampler0 : register(s0);
+cbuffer constant0 : register(b0){
+    float radius;
+    float edge;
+};
+float4 psmain(float4 input : SV_Position) : SV_Target{
+    uint w,h;
+    tempbuffer.GetDimensions(w,h);
+    float2 texelSize = float2(1.0/w, 1.0/h);
+    float2 uv = input.xy * texelSize;
+    float4 color = float4(0,0,0,0);
+    
+    int ry = (int)radius;
+    
+    //垂直方向
+    int countY = (ry == 0) ? 1 : (ry * 2 + 1);
+    for(int y = -ry; y <= ry; y++){
+        float2 offset = float2(0,y * texelSize.y);
+        float2 sampleUV = uv + offset; //取得する座標
+        if(edge == 1.0){
+            sampleUV = clamp(sampleUV, 0.0, 1.0);
+        }
+        color += tempbuffer.Sample(sampler0, sampleUV);
+    }
+    color /= countY;
+
+    return color;
+}
+]]
+obj.effect("領域拡張","上",radius,"下",radius)
+obj.copybuffer("tempbuffer","object")--tempbufferに元の映像を退避。
+obj.pixelshader("psmain","object",{"tempbuffer"},{radius,edge and 1 or 0},"draw","loop");
+if(obj.getinfo("filter")) then
+	obj.draw()
+	obj.copybuffer("object","framebuffer")
+end
